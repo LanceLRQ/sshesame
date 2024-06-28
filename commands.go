@@ -24,12 +24,15 @@ type command interface {
 }
 
 var commands = map[string]command{
-	"sh":    cmdShell{},
-	"true":  cmdTrue{},
-	"false": cmdFalse{},
-	"echo":  cmdEcho{},
-	"cat":   cmdCat{},
-	"su":    cmdSu{},
+	"sh":     cmdShell{},
+	"true":   cmdTrue{},
+	"false":  cmdFalse{},
+	"echo":   cmdEcho{},
+	"cat":    cmdCat{},
+	"su":     cmdSu{},
+	"whoami": cmdWhoami{},
+	"pwd":    cmdPwd{},
+	"huahuo": cmdHuahuo{},
 }
 
 var shellProgram = []string{"sh"}
@@ -109,6 +112,27 @@ type cmdEcho struct{}
 
 func (cmdEcho) execute(context commandContext) (uint32, error) {
 	_, err := fmt.Fprintln(context.stdout, strings.Join(context.args[1:], " "))
+	return 0, err
+}
+
+type cmdHuahuo struct{}
+
+func (cmdHuahuo) execute(context commandContext) (uint32, error) {
+	_, err := fmt.Fprintln(context.stdout, "哟，小灰毛，玩的开心吗？玩的开心就好。")
+	return 0, err
+}
+
+type cmdWhoami struct{}
+
+func (cmdWhoami) execute(context commandContext) (uint32, error) {
+	_, err := fmt.Fprintln(context.stdout, "花斯卡，火斯卡，小~花~火！")
+	return 0, err
+}
+
+type cmdPwd struct{}
+
+func (cmdPwd) execute(context commandContext) (uint32, error) {
+	_, err := fmt.Fprintln(context.stdout, "Never gonna give you up, Never gonna let you down, Never gonna run around and desert you, Never gonna make you cry, Never gonna say goodbye, Never gonna tell a lie and hurt you")
 	return 0, err
 }
 

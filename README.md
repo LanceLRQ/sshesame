@@ -27,7 +27,8 @@ An easy to set up and use SSH honeypot, a fake SSH server that lets anyone in an
 ```
 $ git clone https://github.com/jaksi/sshesame.git
 $ cd sshesame
-$ go build
+$ go build  
+$ go run .   # or
 ```
 
 ### GitHub releases
