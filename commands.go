@@ -33,6 +33,7 @@ var commands = map[string]command{
 	"whoami": cmdWhoami{},
 	"pwd":    cmdPwd{},
 	"huahuo": cmdHuahuo{},
+	"uname":  cmdUname{},
 }
 
 var shellProgram = []string{"sh"}
@@ -129,6 +130,13 @@ func (cmdWhoami) execute(context commandContext) (uint32, error) {
 	return 0, err
 }
 
+type cmdUname struct{}
+
+func (cmdUname) execute(context commandContext) (uint32, error) {
+	_, err := fmt.Fprintln(context.stdout, "Linux never-gonna-give-you-up-server 5.4.0-187-generic #207-Ubuntu SMP Mon Jun 10 08:16:10 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux")
+	return 0, err
+}
+
 type cmdPwd struct{}
 
 func (cmdPwd) execute(context commandContext) (uint32, error) {
@@ -141,6 +149,10 @@ type cmdCat struct{}
 func (cmdCat) execute(context commandContext) (uint32, error) {
 	if len(context.args) > 1 {
 		for _, file := range context.args[1:] {
+			if file == "/proc/cpuinfo" {
+				_, err := fmt.Fprintln(context.stdout, "processor	: 0\nvendor_id	: Mihoyo\nmodel name	: Mihoyo(R) Honkai StarRail(R) Sparkle CPU @ 2.50GHz")
+				return 0, err
+			}
 			if _, err := fmt.Fprintf(context.stderr, "%v: %v: No such file or directory\n", context.args[0], file); err != nil {
 				return 0, err
 			}
