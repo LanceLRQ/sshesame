@@ -68,15 +68,16 @@ type sshProtoConfig struct {
 }
 
 type mongoDBConfig struct {
-	Enable         bool   `yaml:"enable"`
-	Host           string `yaml:"host"`
-	Port           int    `yaml:"port"`
-	User           string `yaml:"user"`
-	Password       string `yaml:"password"`
-	Auth           string `yaml:"auth"`
-	DB             string `yaml:"db"`
-	SSHLogCollect  string `yaml:"ssh_log_collect"`
-	AuthLogCollect string `yaml:"auth_log_collect"`
+	Enable          bool   `yaml:"enable"`
+	Host            string `yaml:"host"`
+	Port            int    `yaml:"port"`
+	User            string `yaml:"user"`
+	Password        string `yaml:"password"`
+	Auth            string `yaml:"auth"`
+	DB              string `yaml:"db"`
+	SSHLogCollect   string `yaml:"ssh_log_collect"`
+	AuthLogCollect  string `yaml:"auth_log_collect"`
+	ShellLogCollect string `yaml:"shell_log_collect"`
 }
 
 type config struct {

@@ -9,12 +9,13 @@ import (
 )
 
 type MongoRecorder struct {
-	cfg            *config
-	client         *mongo.Client
-	sshLogCollect  *mongo.Collection
-	authLogCollect *mongo.Collection
-	stopWatchDog   chan bool
-	isConnected    bool
+	cfg             *config
+	client          *mongo.Client
+	sshLogCollect   *mongo.Collection
+	authLogCollect  *mongo.Collection
+	shellLogCollect *mongo.Collection
+	stopWatchDog    chan bool
+	isConnected     bool
 }
 
 func (mr *MongoRecorder) init() error {
@@ -38,6 +39,7 @@ func (mr *MongoRecorder) init() error {
 	infoLogger.Printf("Successfully connected to MongoDB")
 	mr.sshLogCollect = mr.client.Database(mr.cfg.MongoDBConfig.DB).Collection(mr.cfg.MongoDBConfig.SSHLogCollect)
 	mr.authLogCollect = mr.client.Database(mr.cfg.MongoDBConfig.DB).Collection(mr.cfg.MongoDBConfig.AuthLogCollect)
+	mr.shellLogCollect = mr.client.Database(mr.cfg.MongoDBConfig.DB).Collection(mr.cfg.MongoDBConfig.ShellLogCollect)
 	mr.isConnected = true
 	return nil
 }

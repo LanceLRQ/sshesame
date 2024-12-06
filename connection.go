@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/bwmarrin/snowflake"
 	"sync"
 
 	"github.com/jaksi/sshutils"
@@ -13,6 +15,7 @@ type connContext struct {
 	ssh.ConnMetadata
 	cfg            *config
 	noMoreSessions bool
+	sessionId      int64
 }
 
 type channelContext struct {
@@ -45,7 +48,15 @@ func handleConnection(conn *sshutils.Conn, cfg *config) {
 	activeSSHConnectionsMetric.Inc()
 	defer activeSSHConnectionsMetric.Dec()
 	var channels sync.WaitGroup
-	context := connContext{ConnMetadata: conn, cfg: cfg}
+
+	// Create a new Node with a Node number of 1
+	idGenerator, err := snowflake.NewNode(1)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	context := connContext{ConnMetadata: conn, cfg: cfg, sessionId: idGenerator.Generate().Int64()}
 	defer func() {
 		conn.Close()
 		channels.Wait()

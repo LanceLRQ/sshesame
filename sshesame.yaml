@@ -112,3 +112,4 @@ mongodb:
   db: sshesame
   ssh_log_collect: ssh_log
   auth_log_collect: auth_log
+  shell_log_collect: shell_log

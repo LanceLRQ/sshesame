@@ -1,8 +1,10 @@
 package main
 
 import (
+	_context "context"
 	"encoding/json"
 	"fmt"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"log"
 	"net"
 	"path/filepath"
@@ -10,14 +12,43 @@ import (
 	"time"
 )
 
+var eventTypeIdMap = map[string]int{
+	"no_auth":                   1,
+	"password_auth":             2,
+	"public_key_auth":           3,
+	"keyboard_interactive_auth": 4,
+	"connection":                5,
+	"connection_close":          6,
+	"tcpip_forward":             7,
+	"cancel_tcpip_forward":      8,
+	"no_more_sessions":          9,
+	"host_keys_prove":           10,
+	"session":                   11,
+	"session_close":             12,
+	"session_input":             13,
+	"direct_tcpip":              14,
+	"direct_tcpip_close":        15,
+	"direct_tcpip_input":        16,
+	"pty":                       17,
+	"shell":                     18,
+	"exec":                      19,
+	"subsystem":                 20,
+	"x11":                       21,
+	"env":                       22,
+	"window_change":             23,
+	"debug_global_request":      24,
+	"debug_channel":             25,
+	"debug_channel_request":     26,
+}
+
 type logEntry interface {
 	fmt.Stringer
 	eventType() string
 }
 
 type addressLog struct {
-	Host string `json:"host"`
-	Port int    `json:"port"`
+	Host string `json:"host" bson:"host"`
+	Port int    `json:"port" bson:"port"`
 }
 
 func (entry addressLog) String() string {
@@ -45,8 +76,8 @@ func (accepted authAccepted) String() string {
 }
 
 type authLog struct {
-	User     string       `json:"user"`
-	Accepted authAccepted `json:"accepted"`
+	User     string       `json:"user" bson:"user"`
+	Accepted authAccepted `json:"accepted" bson:"accepted"`
 }
 
 type noAuthLog struct {
@@ -62,7 +93,7 @@ func (entry noAuthLog) eventType() string {
 
 type passwordAuthLog struct {
 	authLog
-	Password string `json:"password"`
+	Password string `json:"password" bson:"password"`
 }
 
 func (entry passwordAuthLog) String() string {
@@ -74,7 +105,7 @@ func (entry passwordAuthLog) eventType() string {
 
 type publicKeyAuthLog struct {
 	authLog
-	PublicKeyFingerprint string `json:"public_key"`
+	PublicKeyFingerprint string `json:"public_key" bson:"public_key"`
 }
 
 func (entry publicKeyAuthLog) String() string {
@@ -86,7 +117,7 @@ func (entry publicKeyAuthLog) eventType() string {
 
 type keyboardInteractiveAuthLog struct {
 	authLog
-	Answers []string `json:"answers"`
+	Answers []string `json:"answers" bson:"answers"`
 }
 
 func (entry keyboardInteractiveAuthLog) String() string {
@@ -97,7 +128,7 @@ func (entry keyboardInteractiveAuthLog) eventType() string {
 }
 
 type connectionLog struct {
-	ClientVersion string `json:"client_version"`
+	ClientVersion string `json:"client_version" bson:"client_version"`
 }
 
 func (entry connectionLog) String() string {
@@ -118,7 +149,7 @@ func (entry connectionCloseLog) eventType() string {
 }
 
 type tcpipForwardLog struct {
-	Address interface{} `json:"address"`
+	Address interface{} `json:"address" bson:"address"`
 }
 
 func (entry tcpipForwardLog) String() string {
@@ -129,7 +160,7 @@ func (entry tcpipForwardLog) eventType() string {
 }
 
 type cancelTCPIPForwardLog struct {
-	Address interface{} `json:"address"`
+	Address interface{} `json:"address" bson:"address"`
 }
 
 func (entry cancelTCPIPForwardLog) String() string {
@@ -150,7 +181,7 @@ func (entry noMoreSessionsLog) eventType() string {
 }
 
 type hostKeysProveLog struct {
-	HostKeyFiles []string `json:"host_key_files"`
+	HostKeyFiles []string `json:"host_key_files" bson:"host_key_files"`
 }
 
 func (entry hostKeysProveLog) String() string {
@@ -165,7 +196,7 @@ func (entry hostKeysProveLog) eventType() string {
 }
 
 type channelLog struct {
-	ChannelID int `json:"channel_id"`
+	ChannelID int `json:"channel_id" bson:"channel_id"`
 }
 
 type sessionLog struct {
@@ -192,7 +223,7 @@ func (entry sessionCloseLog) eventType() string {
 
 type sessionInputLog struct {
 	channelLog
-	Input string `json:"input"`
+	Input string `json:"input" bson:"input"`
 }
 
 func (entry sessionInputLog) String() string {
@@ -204,8 +235,8 @@ func (entry sessionInputLog) eventType() string {
 
 type directTCPIPLog struct {
 	channelLog
-	From interface{} `json:"from"`
-	To   interface{} `json:"to"`
+	From interface{} `json:"from" bson:"from"`
+	To   interface{} `json:"to" bson:"to"`
 }
 
 func (entry directTCPIPLog) String() string {
@@ -228,7 +259,7 @@ func (entry directTCPIPCloseLog) eventType() string {
 
 type directTCPIPInputLog struct {
 	channelLog
-	Input string `json:"input"`
+	Input string `json:"input" bson:"input"`
 }
 
 func (entry directTCPIPInputLog) String() string {
@@ -240,9 +271,9 @@ func (entry directTCPIPInputLog) eventType() string {
 
 type ptyLog struct {
 	channelLog
-	Terminal string `json:"terminal"`
-	Width    uint32 `json:"width"`
-	Height   uint32 `json:"height"`
+	Terminal string `json:"terminal" bson:"terminal"`
+	Width    uint32 `json:"width" bson:"width"`
+	Height   uint32 `json:"height" bson:"height"`
 }
 
 func (entry ptyLog) String() string {
@@ -265,7 +296,7 @@ func (entry shellLog) eventType() string {
 
 type execLog struct {
 	channelLog
-	Command string `json:"command"`
+	Command string `json:"command" bson:"command"`
 }
 
 func (entry execLog) String() string {
@@ -277,7 +308,7 @@ func (entry execLog) eventType() string {
 
 type subsystemLog struct {
 	channelLog
-	Subsystem string `json:"subsystem"`
+	Subsystem string `json:"subsystem" bson:"subsystem"`
 }
 
 func (entry subsystemLog) String() string {
@@ -289,7 +320,7 @@ func (entry subsystemLog) eventType() string {
 
 type x11Log struct {
 	channelLog
-	Screen uint32 `json:"screen"`
+	Screen uint32 `json:"screen" bson:"screen"`
 }
 
 func (entry x11Log) String() string {
@@ -301,8 +332,8 @@ func (entry x11Log) eventType() string {
 
 type envLog struct {
 	channelLog
-	Name  string `json:"name"`
-	Value string `json:"value"`
+	Name  string `json:"name" bson:"name"`
+	Value string `json:"value" bson:"value"`
 }
 
 func (entry envLog) String() string {
@@ -314,8 +345,8 @@ func (entry envLog) eventType() string {
 
 type windowChangeLog struct {
 	channelLog
-	Width  uint32 `json:"width"`
-	Height uint32 `json:"height"`
+	Width  uint32 `json:"width" bson:"width"`
+	Height uint32 `json:"height" bson:"height"`
 }
 
 func (entry windowChangeLog) String() string {
@@ -326,9 +357,9 @@ func (entry windowChangeLog) eventType() string {
 }
 
 type debugGlobalRequestLog struct {
-	RequestType string `json:"request_type"`
-	WantReply   bool   `json:"want_reply"`
-	Payload     string `json:"payload"`
+	RequestType string `json:"request_type" bson:"request_type"`
+	WantReply   bool   `json:"want_reply" bson:"want_reply"`
+	Payload     string `json:"payload" bson:"payload"`
 }
 
 func (entry debugGlobalRequestLog) String() string {
@@ -345,8 +376,8 @@ func (entry debugGlobalRequestLog) eventType() string {
 
 type debugChannelLog struct {
 	channelLog
-	ChannelType string `json:"channel_type"`
-	ExtraData   string `json:"extra_data"`
+	ChannelType string `json:"channel_type" bson:"channel_type"`
+	ExtraData   string `json:"extra_data" bson:"extra_data"`
 }
 
 func (entry debugChannelLog) String() string {
@@ -363,9 +394,9 @@ func (entry debugChannelLog) eventType() string {
 
 type debugChannelRequestLog struct {
 	channelLog
-	RequestType string `json:"request_type"`
-	WantReply   bool   `json:"want_reply"`
-	Payload     string `json:"payload"`
+	RequestType string `json:"request_type" bson:"request_type"`
+	WantReply   bool   `json:"want_reply" bson:"want_reply"`
+	Payload     string `json:"payload" bson:"payload"`
 }
 
 func (entry debugChannelRequestLog) String() string {
@@ -383,6 +414,9 @@ func (entry debugChannelRequestLog) eventType() string {
 func (context connContext) logEvent(entry logEntry) {
 	if strings.HasPrefix(entry.eventType(), "debug_") && !context.cfg.Logging.Debug {
 		return
+	}
+	if context.cfg.MongoDBConfig.Enable && context.cfg.mongoRecorder.isConnected {
+		context.logEventToMongo(entry)
 	}
 	if context.cfg.Logging.JSON {
 		var jsonEntry interface{}
@@ -410,5 +444,75 @@ func (context connContext) logEvent(entry logEntry) {
 		log.Print(string(logBytes))
 	} else {
 		log.Printf("[%v] %v", context.RemoteAddr().String(), entry)
+	}
+}
+
+func mergeBSONM(bson1, bson2 bson.M) *bson.M {
+	for k, v := range bson2 {
+		bson1[k] = v
+	}
+	return &bson1
+}
+
+func (context connContext) logEventToMongo(entry logEntry) {
+	eventType := entry.eventType()
+	eventTypeId, ok := eventTypeIdMap[eventType]
+	tcpSource := context.RemoteAddr().(*net.TCPAddr)
+	if !ok {
+		eventTypeId = 0
+	}
+	logRecord := &bson.M{
+		"time":        time.Now(),
+		"session_id":  context.sessionId,
+		"event_type":  eventTypeId,
+		"source_ip":   tcpSource.IP.String(),
+		"source_port": tcpSource.Port,
+	}
+	var err error
+	collect := context.cfg.mongoRecorder.sshLogCollect
+	switch eventType {
+	case "no_auth":
+		return
+	case "password_auth":
+		mergeBSONM(*logRecord, bson.M{
+			"password": entry.(passwordAuthLog).Password,
+			"user":     entry.(passwordAuthLog).User,
+			"accepted": entry.(passwordAuthLog).Accepted,
+		})
+		collect = context.cfg.mongoRecorder.authLogCollect
+		break
+	case "public_key_auth":
+		mergeBSONM(*logRecord, bson.M{
+			"public_key": entry.(publicKeyAuthLog).PublicKeyFingerprint,
+			"user":       entry.(publicKeyAuthLog).User,
+			"accepted":   entry.(publicKeyAuthLog).Accepted,
+		})
+		collect = context.cfg.mongoRecorder.authLogCollect
+		break
+	case "keyboard_interactive_auth":
+		logRecord = mergeBSONM(*logRecord, bson.M{
+			"answers":  entry.(keyboardInteractiveAuthLog).Answers,
+			"user":     entry.(keyboardInteractiveAuthLog).User,
+			"accepted": entry.(keyboardInteractiveAuthLog).Accepted,
+		})
+
+		collect = context.cfg.mongoRecorder.authLogCollect
+		break
+	case "session_input":
+		logRecord = mergeBSONM(*logRecord, bson.M{
+			"content":    entry.(sessionInputLog).Input,
+			"channel_id": entry.(sessionInputLog).ChannelID,
+		})
+		collect = context.cfg.mongoRecorder.shellLogCollect
+		break
+	default:
+		logRecord = mergeBSONM(*logRecord, bson.M{
+			"payload": entry,
+		})
+		break
+	}
+	_, err = collect.InsertOne(_context.Background(), logRecord)
+	if err != nil {
+		warningLogger.Printf("[mongo] Failed to insert log event: %v", err)
 	}
 }
