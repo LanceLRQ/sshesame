@@ -102,10 +102,13 @@ ssh_proto:
   # If unspecified or null, a sensible default is used.
   macs: null
 
-mongo:
+mongodb:
+  enable: true
   host: 127.0.0.1
   port: 27017
   user: root
   password: 12345678
   auth: admin
-  db: test
+  db: sshesame
+  ssh_log_collect: ssh_log
+  auth_log_collect: auth_log

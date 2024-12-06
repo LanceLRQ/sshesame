@@ -67,15 +67,29 @@ type sshProtoConfig struct {
 	MACs           []string `yaml:"macs"`
 }
 
+type mongoDBConfig struct {
+	Enable         bool   `yaml:"enable"`
+	Host           string `yaml:"host"`
+	Port           int    `yaml:"port"`
+	User           string `yaml:"user"`
+	Password       string `yaml:"password"`
+	Auth           string `yaml:"auth"`
+	DB             string `yaml:"db"`
+	SSHLogCollect  string `yaml:"ssh_log_collect"`
+	AuthLogCollect string `yaml:"auth_log_collect"`
+}
+
 type config struct {
-	Server   serverConfig   `yaml:"server"`
-	Logging  loggingConfig  `yaml:"logging"`
-	Auth     authConfig     `yaml:"auth"`
-	SSHProto sshProtoConfig `yaml:"ssh_proto"`
+	Server        serverConfig   `yaml:"server"`
+	Logging       loggingConfig  `yaml:"logging"`
+	Auth          authConfig     `yaml:"auth"`
+	SSHProto      sshProtoConfig `yaml:"ssh_proto"`
+	MongoDBConfig mongoDBConfig  `yaml:"mongodb"`
 
 	parsedHostKeys []ssh.Signer
 	sshConfig      *ssh.ServerConfig
 	logFileHandle  io.WriteCloser
+	mongoRecorder  *MongoRecorder
 }
 
 func (cfg *config) setDefaults() {

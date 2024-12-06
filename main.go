@@ -62,6 +62,12 @@ func main() {
 	}()
 	signal.Notify(reloadSignals, syscall.SIGHUP)
 
+	// Init MongoDB
+	if cfg.MongoDBConfig.Enable {
+		mr := NewMongoRecorder(cfg)
+		cfg.mongoRecorder = mr
+	}
+
 	listener, err := sshutils.Listen(cfg.Server.ListenAddress, cfg.sshConfig)
 	if err != nil {
 		errorLogger.Fatalf("Failed to listen for connections: %v", err)
