@@ -101,3 +101,11 @@ ssh_proto:
   # The allowed MAC algorithms.
   # If unspecified or null, a sensible default is used.
   macs: null
+
+mongo:
+  host: 127.0.0.1
+  port: 27017
+  user: root
+  password: 12345678
+  auth: admin
+  db: test
