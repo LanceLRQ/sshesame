@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"time"
@@ -79,4 +80,63 @@ func NewMongoRecorder(cfg *config) *MongoRecorder {
 	_ = mongoRecorder.init()
 	go mongoRecorder.WatchDog()
 	return mongoRecorder
+}
+
+func LogEventToMongo(mongoRecorder *MongoRecorder, eventType string, logRecord *bson.M, entry logEntry) {
+	var err error
+	collect := mongoRecorder.sshLogCollect
+	switch eventType {
+	case "no_auth":
+		if entry.(noAuthLog).User != "" {
+			mergeBSONM(*logRecord, bson.M{
+				"user":     entry.(noAuthLog).User,
+				"accepted": entry.(noAuthLog).Accepted,
+			})
+			collect = mongoRecorder.authLogCollect
+			break
+		} else {
+			return
+		}
+	case "password_auth":
+		mergeBSONM(*logRecord, bson.M{
+			"password": entry.(passwordAuthLog).Password,
+			"user":     entry.(passwordAuthLog).User,
+			"accepted": entry.(passwordAuthLog).Accepted,
+		})
+		collect = mongoRecorder.authLogCollect
+		break
+	case "public_key_auth":
+		mergeBSONM(*logRecord, bson.M{
+			"public_key": entry.(publicKeyAuthLog).PublicKeyFingerprint,
+			"user":       entry.(publicKeyAuthLog).User,
+			"accepted":   entry.(publicKeyAuthLog).Accepted,
+		})
+		collect = mongoRecorder.authLogCollect
+		break
+	case "keyboard_interactive_auth":
+		logRecord = mergeBSONM(*logRecord, bson.M{
+			"answers":  entry.(keyboardInteractiveAuthLog).Answers,
+			"user":     entry.(keyboardInteractiveAuthLog).User,
+			"accepted": entry.(keyboardInteractiveAuthLog).Accepted,
+		})
+
+		collect = mongoRecorder.authLogCollect
+		break
+	case "session_input":
+		logRecord = mergeBSONM(*logRecord, bson.M{
+			"content":    entry.(sessionInputLog).Input,
+			"channel_id": entry.(sessionInputLog).ChannelID,
+		})
+		collect = mongoRecorder.shellLogCollect
+		break
+	default:
+		logRecord = mergeBSONM(*logRecord, bson.M{
+			"payload": entry,
+		})
+		break
+	}
+	_, err = collect.InsertOne(context.Background(), logRecord)
+	if err != nil {
+		warningLogger.Printf("[mongo] Failed to insert log event: %v", err)
+	}
 }

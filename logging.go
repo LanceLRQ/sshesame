@@ -1,7 +1,6 @@
 package main
 
 import (
-	_context "context"
 	"encoding/json"
 	"fmt"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -468,51 +467,5 @@ func (context connContext) logEventToMongo(entry logEntry) {
 		"source_ip":   tcpSource.IP.String(),
 		"source_port": tcpSource.Port,
 	}
-	var err error
-	collect := context.cfg.mongoRecorder.sshLogCollect
-	switch eventType {
-	case "no_auth":
-		return
-	case "password_auth":
-		mergeBSONM(*logRecord, bson.M{
-			"password": entry.(passwordAuthLog).Password,
-			"user":     entry.(passwordAuthLog).User,
-			"accepted": entry.(passwordAuthLog).Accepted,
-		})
-		collect = context.cfg.mongoRecorder.authLogCollect
-		break
-	case "public_key_auth":
-		mergeBSONM(*logRecord, bson.M{
-			"public_key": entry.(publicKeyAuthLog).PublicKeyFingerprint,
-			"user":       entry.(publicKeyAuthLog).User,
-			"accepted":   entry.(publicKeyAuthLog).Accepted,
-		})
-		collect = context.cfg.mongoRecorder.authLogCollect
-		break
-	case "keyboard_interactive_auth":
-		logRecord = mergeBSONM(*logRecord, bson.M{
-			"answers":  entry.(keyboardInteractiveAuthLog).Answers,
-			"user":     entry.(keyboardInteractiveAuthLog).User,
-			"accepted": entry.(keyboardInteractiveAuthLog).Accepted,
-		})
-
-		collect = context.cfg.mongoRecorder.authLogCollect
-		break
-	case "session_input":
-		logRecord = mergeBSONM(*logRecord, bson.M{
-			"content":    entry.(sessionInputLog).Input,
-			"channel_id": entry.(sessionInputLog).ChannelID,
-		})
-		collect = context.cfg.mongoRecorder.shellLogCollect
-		break
-	default:
-		logRecord = mergeBSONM(*logRecord, bson.M{
-			"payload": entry,
-		})
-		break
-	}
-	_, err = collect.InsertOne(_context.Background(), logRecord)
-	if err != nil {
-		warningLogger.Printf("[mongo] Failed to insert log event: %v", err)
-	}
+	LogEventToMongo(context.cfg.mongoRecorder, eventType, logRecord, entry)
 }

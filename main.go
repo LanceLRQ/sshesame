@@ -29,6 +29,9 @@ func init() {
 func main() {
 	configFile := flag.String("config", "", "optional config file")
 	dataDir := flag.String("data_dir", path.Join(xdg.DataHome, "sshesame"), "data directory to store automatically generated host keys in")
+	oldLog := flag.String("old-log", "", "parse old log")
+	oldLogIsJSON := flag.Bool("old-log-json", false, "old log format")
+	dryRun := flag.Bool("dry-run", false, "only run")
 	flag.Parse()
 
 	cfg := &config{}
@@ -66,6 +69,11 @@ func main() {
 	if cfg.MongoDBConfig.Enable {
 		mr := NewMongoRecorder(cfg)
 		cfg.mongoRecorder = mr
+	}
+
+	if *oldLog != "" {
+		parseOldLogToMongo(cfg, *oldLog, *oldLogIsJSON, *dryRun)
+		return
 	}
 
 	listener, err := sshutils.Listen(cfg.Server.ListenAddress, cfg.sshConfig)
