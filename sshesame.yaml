@@ -18,10 +18,10 @@ server:
 logging:
   # The log file to output activity logs to. Debug and error logs are still written to standard error.
   # If unspecified or null, activity logs are written to standard out.
-  file: null
+  file: ./ssh.log
 
   # Make activity logs JSON-formatted instead of human readable.
-  json: false
+  json: true
 
   # Include timestamps in the logs.
   timestamps: true

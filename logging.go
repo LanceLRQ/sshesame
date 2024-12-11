@@ -423,17 +423,30 @@ func (context connContext) logEvent(entry logEntry) {
 		source := getAddressLog(tcpSource.IP.String(), tcpSource.Port, context.cfg)
 		if context.cfg.Logging.Timestamps {
 			jsonEntry = struct {
-				Time      string      `json:"time"`
+				SessionId int64       `json:"session_id"`
+				Time      int64       `json:"time"`
 				Source    interface{} `json:"source"`
 				EventType string      `json:"event_type"`
 				Event     logEntry    `json:"event"`
-			}{time.Now().Format(time.RFC3339), source, entry.eventType(), entry}
+			}{
+				context.sessionId,
+				time.Now().Unix(),
+				source,
+				entry.eventType(),
+				entry,
+			}
 		} else {
 			jsonEntry = struct {
+				SessionId int64       `json:"session_id"`
 				Source    interface{} `json:"source"`
 				EventType string      `json:"event_type"`
 				Event     logEntry    `json:"event"`
-			}{source, entry.eventType(), entry}
+			}{
+				context.sessionId,
+				source,
+				entry.eventType(),
+				entry,
+			}
 		}
 		logBytes, err := json.Marshal(jsonEntry)
 		if err != nil {

@@ -49,7 +49,8 @@ func executeProgram(context commandContext, ctx *sessionContext) (uint32, error)
 	if len(context.args) == 0 {
 		return 0, nil
 	}
-	command := commands[context.args[0]]
+	cmd := strings.TrimRight(context.args[0], ";")
+	command := commands[cmd]
 	if command == nil {
 		_, err := fmt.Fprintf(context.stderr, "%v: command not found\n", context.args[0])
 		return 127, err
@@ -85,7 +86,7 @@ func (cmdShell) execute(context commandContext, ctx *sessionContext) (uint32, er
 		if len(args) == 0 {
 			continue
 		}
-		if args[0] == "exit" {
+		if args[0] == "exit" || args[0] == "exit;" {
 			var err error
 			var status uint64 = uint64(lastStatus)
 			if len(args) > 1 {
