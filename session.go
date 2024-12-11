@@ -132,9 +132,10 @@ func (request windowChangeRequestPayload) logEntry(channelID int) logEntry {
 type sessionContext struct {
 	channelContext
 	ssh.Channel
-	inputChan chan string
-	active    bool
-	pty       bool
+	inputChan   chan string
+	active      bool
+	pty         bool
+	virtualPath string
 }
 
 type scannerReadLiner struct {
@@ -197,7 +198,7 @@ func (context *sessionContext) handleProgram(program []string) {
 
 		result, err := executeProgram(
 			commandContext{program, stdin, stdout, stderr, context.pty, context.User()},
-			*context.cfg,
+			context,
 		)
 		if err != nil && err != io.EOF && err != clientEOF {
 			warningLogger.Printf("Error executing program: %s", err)
@@ -377,7 +378,14 @@ func handleSessionChannel(newChannel ssh.NewChannel, context channelContext) err
 	})
 
 	inputChan := make(chan string)
-	session := sessionContext{context, channel, inputChan, false, false}
+	session := sessionContext{
+		context,
+		channel,
+		inputChan,
+		false,
+		false,
+		"/",
+	}
 
 	for inputChan != nil || requests != nil {
 		select {
