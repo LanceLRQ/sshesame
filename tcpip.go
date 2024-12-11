@@ -51,6 +51,9 @@ func handleDirectTCPIPChannel(newChannel ssh.NewChannel, context channelContext)
 	if err := ssh.Unmarshal(newChannel.ExtraData(), channelData); err != nil {
 		return err
 	}
+	if len(context.cfg.Server.TCPIPServices) == 0 {
+		return newChannel.Reject(ssh.ConnectionFailed, "Connection refused")
+	}
 	service := context.cfg.Server.TCPIPServices[channelData.Port]
 	server := servers[service]
 	if server == nil {
