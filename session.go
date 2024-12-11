@@ -195,7 +195,10 @@ func (context *sessionContext) handleProgram(program []string) {
 	go func() {
 		defer close(context.inputChan)
 
-		result, err := executeProgram(commandContext{program, stdin, stdout, stderr, context.pty, context.User()})
+		result, err := executeProgram(
+			commandContext{program, stdin, stdout, stderr, context.pty, context.User()},
+			*context.cfg,
+		)
 		if err != nil && err != io.EOF && err != clientEOF {
 			warningLogger.Printf("Error executing program: %s", err)
 			return

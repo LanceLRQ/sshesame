@@ -9,11 +9,11 @@ server:
   # If unspecified or null, sensible defaults will be used.
   # If empty, no direct-tcpip channels will be accepted.
   tcpip_services:
-    25: SMTP
-    80: HTTP
-    110: POP3
-    587: SMTP
-    8080: HTTP
+#    25: SMTP
+#    80: HTTP
+#    110: POP3
+#    587: SMTP
+#    8080: HTTP
 
 logging:
   # The log file to output activity logs to. Debug and error logs are still written to standard error.

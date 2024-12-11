@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"syscall"
 
 	"github.com/adrg/xdg"
@@ -27,7 +28,7 @@ func init() {
 }
 
 func main() {
-	configFile := flag.String("config", "", "optional config file")
+	configFile := flag.String("config", "./sshesame.yaml", "optional config file")
 	dataDir := flag.String("data_dir", path.Join(xdg.DataHome, "sshesame"), "data directory to store automatically generated host keys in")
 	oldLog := flag.String("old-log", "", "parse old log")
 	oldLogIsJSON := flag.Bool("old-log-json", false, "old log format")
@@ -64,6 +65,12 @@ func main() {
 		}
 	}()
 	signal.Notify(reloadSignals, syscall.SIGHUP)
+
+	workDir, err := filepath.Abs(cfg.WorkDir)
+	if err != nil {
+		errorLogger.Fatalf("Failed to get absolute path of working directory: %v", err)
+	}
+	cfg.WorkDir = workDir
 
 	// Init MongoDB
 	if cfg.MongoDBConfig.Enable {

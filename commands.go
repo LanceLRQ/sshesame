@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
+	"path"
 	"strconv"
 	"strings"
 )
@@ -20,7 +22,7 @@ type commandContext struct {
 }
 
 type command interface {
-	execute(context commandContext) (uint32, error)
+	execute(context commandContext, cfg config) (uint32, error)
 }
 
 var commands = map[string]command{
@@ -38,7 +40,7 @@ var commands = map[string]command{
 
 var shellProgram = []string{"sh"}
 
-func executeProgram(context commandContext) (uint32, error) {
+func executeProgram(context commandContext, cfg config) (uint32, error) {
 	if len(context.args) == 0 {
 		return 0, nil
 	}
@@ -47,12 +49,12 @@ func executeProgram(context commandContext) (uint32, error) {
 		_, err := fmt.Fprintf(context.stderr, "%v: command not found\n", context.args[0])
 		return 127, err
 	}
-	return command.execute(context)
+	return command.execute(context, cfg)
 }
 
 type cmdShell struct{}
 
-func (cmdShell) execute(context commandContext) (uint32, error) {
+func (cmdShell) execute(context commandContext, cfg config) (uint32, error) {
 	var prompt string
 	if context.pty {
 		switch context.user {
@@ -91,7 +93,7 @@ func (cmdShell) execute(context commandContext) (uint32, error) {
 		}
 		newContext := context
 		newContext.args = args
-		if lastStatus, err = executeProgram(newContext); err != nil {
+		if lastStatus, err = executeProgram(newContext, cfg); err != nil {
 			return lastStatus, err
 		}
 	}
@@ -99,59 +101,64 @@ func (cmdShell) execute(context commandContext) (uint32, error) {
 
 type cmdTrue struct{}
 
-func (cmdTrue) execute(context commandContext) (uint32, error) {
+func (cmdTrue) execute(context commandContext, cfg config) (uint32, error) {
 	return 0, nil
 }
 
 type cmdFalse struct{}
 
-func (cmdFalse) execute(context commandContext) (uint32, error) {
+func (cmdFalse) execute(context commandContext, cfg config) (uint32, error) {
 	return 1, nil
 }
 
 type cmdEcho struct{}
 
-func (cmdEcho) execute(context commandContext) (uint32, error) {
+func (cmdEcho) execute(context commandContext, cfg config) (uint32, error) {
 	_, err := fmt.Fprintln(context.stdout, strings.Join(context.args[1:], " "))
 	return 0, err
 }
 
 type cmdHuahuo struct{}
 
-func (cmdHuahuo) execute(context commandContext) (uint32, error) {
+func (cmdHuahuo) execute(context commandContext, cfg config) (uint32, error) {
 	_, err := fmt.Fprintln(context.stdout, "哟，小灰毛，玩的开心吗？玩的开心就好。")
 	return 0, err
 }
 
 type cmdWhoami struct{}
 
-func (cmdWhoami) execute(context commandContext) (uint32, error) {
+func (cmdWhoami) execute(context commandContext, cfg config) (uint32, error) {
 	_, err := fmt.Fprintln(context.stdout, "花斯卡，火斯卡，小~花~火！")
 	return 0, err
 }
 
 type cmdUname struct{}
 
-func (cmdUname) execute(context commandContext) (uint32, error) {
+func (cmdUname) execute(context commandContext, cfg config) (uint32, error) {
 	_, err := fmt.Fprintln(context.stdout, "Linux never-gonna-give-you-up-server 5.4.0-187-generic #207-Ubuntu SMP Mon Jun 10 08:16:10 UTC 2024 x86_64 x86_64 x86_64 GNU/Linux")
 	return 0, err
 }
 
 type cmdPwd struct{}
 
-func (cmdPwd) execute(context commandContext) (uint32, error) {
+func (cmdPwd) execute(context commandContext, cfg config) (uint32, error) {
 	_, err := fmt.Fprintln(context.stdout, "Never gonna give you up, Never gonna let you down, Never gonna run around and desert you, Never gonna make you cry, Never gonna say goodbye, Never gonna tell a lie and hurt you")
 	return 0, err
 }
 
 type cmdCat struct{}
 
-func (cmdCat) execute(context commandContext) (uint32, error) {
+func (cmdCat) execute(context commandContext, cfg config) (uint32, error) {
 	if len(context.args) > 1 {
 		for _, file := range context.args[1:] {
-			if file == "/proc/cpuinfo" {
-				_, err := fmt.Fprintln(context.stdout, "processor	: 0\nvendor_id	: Mihoyo\nmodel name	: Mihoyo(R) Honkai StarRail(R) Sparkle CPU @ 2.50GHz")
-				return 0, err
+			funnyFileName := strings.Replace(file, "/", "_", -1)
+			fp, err := os.OpenFile(path.Join(cfg.WorkDir, "./funny_files/cat/", funnyFileName), os.O_RDONLY, 0644)
+			if err == nil {
+				fileData, err := io.ReadAll(fp)
+				if err == nil {
+					_, err := fmt.Fprintln(context.stdout, string(fileData))
+					return 0, err
+				}
 			}
 			if _, err := fmt.Fprintf(context.stderr, "%v: %v: No such file or directory\n", context.args[0], file); err != nil {
 				return 0, err
@@ -172,12 +179,12 @@ func (cmdCat) execute(context commandContext) (uint32, error) {
 
 type cmdSu struct{}
 
-func (cmdSu) execute(context commandContext) (uint32, error) {
+func (cmdSu) execute(context commandContext, cfg config) (uint32, error) {
 	newContext := context
 	newContext.user = "root"
 	if len(context.args) > 1 {
 		newContext.user = context.args[1]
 	}
 	newContext.args = shellProgram
-	return executeProgram(newContext)
+	return executeProgram(newContext, cfg)
 }

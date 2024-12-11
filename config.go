@@ -86,6 +86,7 @@ type config struct {
 	Auth          authConfig     `yaml:"auth"`
 	SSHProto      sshProtoConfig `yaml:"ssh_proto"`
 	MongoDBConfig mongoDBConfig  `yaml:"mongodb"`
+	WorkDir       string         `yaml:"work_dir"`
 
 	parsedHostKeys []ssh.Signer
 	sshConfig      *ssh.ServerConfig
